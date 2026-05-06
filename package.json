@@ -25,7 +25,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/StoneyTECH/MCP-Compliance-Scan.git"
+    "url": "https://github.com/StoneyTECH/StoneyTECH-MCP-Compliance-Scan.git"
+  },
+  "homepage": "https://stoneytech.net/mcp",
+  "bugs": {
+    "url": "https://github.com/StoneyTECH/StoneyTECH-MCP-Compliance-Scan/issues"
   },
   "license": "Apache-2.0",
   "dependencies": {
