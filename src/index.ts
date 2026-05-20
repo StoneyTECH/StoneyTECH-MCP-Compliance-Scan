@@ -29,6 +29,13 @@ import {
   formatComplianceReportMarkdown,
   generateComplianceReport
 } from "./report.js";
+import {
+  EDGE_SEMANTICS,
+  GRAPH_STORAGE_MODEL,
+  formatImpactGraphDot,
+  formatImpactGraphMarkdown,
+  formatImpactGraphMermaid
+} from "./graph.js";
 import { formatReviewMarkdown, reviewDiff } from "./review.js";
 import {
   assertMcpPathAllowed,
@@ -44,6 +51,7 @@ import {
 
 const ReviewProfileSchema = z.enum(["standard", "strict", "security"]).default("standard");
 const OutputFormatSchema = z.enum(["markdown", "json"]).default("markdown");
+const GraphOutputFormatSchema = z.enum(["markdown", "json", "mermaid", "dot"]).default("markdown");
 const ComplianceReportScopeSchema = z.enum(["portfolio", "repository", "audit_run", "merge_window"]).default("portfolio");
 const RepositoryReviewInputSchema = {
   repoPath: z.string().min(1).describe("Path to the repository to review."),
@@ -568,11 +576,11 @@ server.registerTool(
   "repository_impact_graph",
   {
     title: "Repository Impact Graph",
-    description: "Return graph nodes and edges linking audit findings to components, standards controls, and dependent findings.",
+    description: "Return or export typed graph edges linking audit findings to components, standards controls, and dependent findings.",
     inputSchema: {
       auditRunId: z.string().min(1),
       dbPath: z.string().optional().describe("Optional SQLite database path. Defaults to .local/audit/compliance.db."),
-      outputFormat: OutputFormatSchema
+      outputFormat: GraphOutputFormatSchema
     }
   },
   async ({ auditRunId, dbPath, outputFormat }) => {
@@ -582,34 +590,25 @@ server.registerTool(
           dbPath: payload.dbPath,
           auditRunId,
           repository: payload.auditRun?.repositoryName,
+          storageModel: GRAPH_STORAGE_MODEL,
+          edgeSemantics: EDGE_SEMANTICS,
           graph: payload.priorityPlan.graph
         }
       : {
           dbPath: payload.dbPath,
           auditRunId
         };
-    const markdown = payload.priorityPlan
-      ? [
-          "# Repository Impact Graph",
-          "",
-          `Audit run: ${auditRunId}`,
-          `Nodes: ${payload.priorityPlan.graph.nodes.length}`,
-          `Edges: ${payload.priorityPlan.graph.edges.length}`,
-          "",
-          "| Edge | From | To | Rationale |",
-          "| --- | --- | --- | --- |",
-          ...payload.priorityPlan.graph.edges
-            .filter((edge) => edge.type === "BLOCKS" || edge.type === "AMPLIFIES" || edge.type === "SHARES_ROOT_CAUSE_WITH")
-            .slice(0, 50)
-            .map((edge) => `| ${edge.type} | ${edge.from} | ${edge.to} | ${edge.rationale} |`)
-        ].join("\n")
-      : `Audit run not found: ${auditRunId}\n`;
+    const text = outputFormat === "json"
+      ? JSON.stringify(graphPayload, null, 2)
+      : payload.priorityPlan
+        ? formatGraphOutput(payload.priorityPlan, auditRunId, outputFormat)
+        : `Audit run not found: ${auditRunId}\n`;
 
     return {
       content: [
         {
           type: "text",
-          text: outputFormat === "json" ? JSON.stringify(graphPayload, null, 2) : `${markdown}\n`
+          text
         }
       ]
     };
@@ -1006,6 +1005,19 @@ function priorityPayloadForAuditRun(auditRunId: string, dbPath?: string): Return
     ...result,
     priorityPlan: prioritizeFindings(result.auditRun.findings)
   };
+}
+
+function formatGraphOutput(priorityPlan: ReturnType<typeof prioritizeFindings>, auditRunId: string, outputFormat: z.infer<typeof GraphOutputFormatSchema>): string {
+  switch (outputFormat) {
+    case "dot":
+      return formatImpactGraphDot(priorityPlan);
+    case "mermaid":
+      return formatImpactGraphMermaid(priorityPlan);
+    case "markdown":
+      return formatImpactGraphMarkdown(priorityPlan, auditRunId);
+    case "json":
+      return JSON.stringify(priorityPlan.graph, null, 2);
+  }
 }
 
 function requiredMcpPath(input: string, label: string): string {

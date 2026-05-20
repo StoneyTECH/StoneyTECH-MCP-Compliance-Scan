@@ -64,7 +64,9 @@ Or initialize it through MCP with `init_audit_db`.
 
 The schema is committed because it is public-safe. The actual `.db` file is ignored because it will contain private repository names, merge events, commit SHAs, PR metadata, audit findings, paths, waivers, priority scores, dependency/impact edges, and history.
 
-The priority and graph model is safe to publish as code. The sensitive part is the populated graph, because it can reveal which private repositories have specific weaknesses and which standards controls they violate.
+The priority and typed edge model is safe to publish as code. The sensitive part is the populated ledger and graph projection, because it can reveal which private repositories have specific weaknesses and which standards controls they violate.
+
+The project does not require a graph database. SQLite is the local source of truth; graph views are exports over typed SQL edges.
 
 ## GitHub Merge Tracking
 

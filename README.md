@@ -223,7 +223,7 @@ Grow later into:
 - `audit_history`, `get_audit_run`, and `audit_trends` query local historical audits.
 - `prioritize_audit_run` returns a deterministic critical/high/medium/low priority order for a persisted audit.
 - `remediation_plan` returns the dependency-aware fix order for a persisted audit.
-- `repository_impact_graph` exports finding, component, standards-control, and finding-to-finding impact edges.
+- `repository_impact_graph` exports finding, component, standards-control, and finding-to-finding impact edges as Markdown, JSON, Mermaid, or DOT.
 - `sync_github_repositories` inventories GitHub repositories into the local registry.
 - `sync_repository_merges` records merged PRs and default-branch commits as merge events.
 - `audit_merge` audits the exact `base_sha..merge_commit_sha` diff for one merge event.
@@ -288,6 +288,24 @@ The impact graph links:
 - `finding -> finding` with `BLOCKS`, `AMPLIFIES`, or `SHARES_ROOT_CAUSE_WITH`.
 
 This lets the MCP answer both "what is most severe?" and "what should we fix first because it unlocks or reduces the most risk?"
+
+## Architecture
+
+MCP Compliance Scan uses SQLite as the local audit ledger and source of truth. It models relationships with typed edges and can export graph views, but it does not require a graph database.
+
+The durable model is:
+
+```text
+SQL ledger -> deterministic rules -> typed edge projection -> graph/report exports
+```
+
+Facts, inferences, and generated prose are kept separate:
+
+- facts: audit runs, findings, standards mappings, repository and merge metadata
+- inferences: priority bands, remediation order, dependency/impact edges
+- prose: Markdown reports, executive summaries, optional future sampled explanations
+
+See [docs/architecture.md](docs/architecture.md) and [docs/roadmap.md](docs/roadmap.md).
 
 ## Merge Event Tracking
 
@@ -411,7 +429,7 @@ The audit ledger is SQLite and local-only by default:
 sqlite3 .local/audit/compliance.db < schema/audit-ledger.sql
 ```
 
-MCP clients can also initialize and write to it with `init_audit_db`, `review_repository_and_persist`, and `audit_merge`. The database stores repository policies, merge events, audit manifests, repo snapshots, rule pack identifiers, standards snapshot hashes, findings, priority metadata, impact edges, and standards-control mappings.
+MCP clients can also initialize and write to it with `init_audit_db`, `review_repository_and_persist`, and `audit_merge`. The database stores repository policies, merge events, audit manifests, repo snapshots, rule pack identifiers, standards snapshot hashes, findings, priority metadata, typed impact edges, and standards-control mappings.
 
 ## Public Repo Boundary
 

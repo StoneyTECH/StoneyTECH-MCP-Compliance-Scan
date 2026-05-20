@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { EDGE_SEMANTICS, formatImpactGraphDot, formatImpactGraphMermaid } from "../src/graph.js";
 import { formatPriorityPlanMarkdown, prioritizeFindings } from "../src/priority.js";
 import { reviewDiff } from "../src/review.js";
 
@@ -44,5 +45,15 @@ describe("priority planning", () => {
     expect(markdown).toContain("Priority Order");
     expect(markdown).toContain("Remediation Steps");
     expect(markdown).toContain("critical");
+  });
+
+  it("exports graph views without requiring a graph database", () => {
+    const report = reviewDiff(sampleDiff, { profile: "security" });
+    const plan = prioritizeFindings(report.findings);
+
+    expect(EDGE_SEMANTICS.VIOLATES_CONTROL.persistence).toBe("fact");
+    expect(EDGE_SEMANTICS.BLOCKS.persistence).toBe("inference");
+    expect(formatImpactGraphMermaid(plan)).toContain("flowchart LR");
+    expect(formatImpactGraphDot(plan)).toContain("digraph RepositoryImpactGraph");
   });
 });

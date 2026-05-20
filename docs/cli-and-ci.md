@@ -116,6 +116,17 @@ The report includes executive summary, repository coverage, merge/audit coverage
 
 Reports read from local SQLite only. Generated reports should stay under ignored paths such as `.local/reports/` unless they have been reviewed for sharing.
 
+## Graph Model
+
+SQLite remains the source of truth. Impact graphs are typed edge projections over the audit ledger, not a dependency on a graph database.
+
+MCP clients can export impact graphs from `repository_impact_graph` as:
+
+- `markdown`: human-readable edge summary and edge semantics.
+- `json`: website-ready graph payload with storage model and edge semantics.
+- `mermaid`: diagram text for docs and lightweight previews.
+- `dot`: Graphviz-compatible directed graph.
+
 ## GitHub Repository Sync
 
 Repository and merge sync commands need GitHub API access. You can either set a token:

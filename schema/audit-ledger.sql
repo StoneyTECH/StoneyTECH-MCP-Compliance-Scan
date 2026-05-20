@@ -198,6 +198,9 @@ CREATE TABLE IF NOT EXISTS remediations (
   metadata_json TEXT NOT NULL DEFAULT '{}'
 );
 
+-- Typed entity-edge projection over SQL ledger facts and deterministic inferences.
+-- Facts: VIOLATES_CONTROL, AFFECTS_COMPONENT.
+-- Inferences: BLOCKS, AMPLIFIES, SHARES_ROOT_CAUSE_WITH.
 CREATE TABLE IF NOT EXISTS graph_edges (
   id TEXT PRIMARY KEY,
   from_type TEXT NOT NULL,
